@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29806.167
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "POLO_DUKCAPIL_FAIL_SAFE", "POLO_DUKCAPIL_FAIL_SAFE\POLO_DUKCAPIL_FAIL_SAFE.csproj", "{133D392A-9D4D-4765-A98B-60720DE55F41}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SEND_DATA_FAIL_SAFE", "SEND_DATA_FAIL_SAFE\SEND_DATA_FAIL_SAFE.csproj", "{F3212758-8692-42A9-A8AA-D3B4FE14A171}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{133D392A-9D4D-4765-A98B-60720DE55F41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{133D392A-9D4D-4765-A98B-60720DE55F41}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{133D392A-9D4D-4765-A98B-60720DE55F41}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{133D392A-9D4D-4765-A98B-60720DE55F41}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3212758-8692-42A9-A8AA-D3B4FE14A171}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3212758-8692-42A9-A8AA-D3B4FE14A171}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3212758-8692-42A9-A8AA-D3B4FE14A171}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3212758-8692-42A9-A8AA-D3B4FE14A171}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DA248611-DE5E-48B5-B4CB-CDA301D1EA8B}
+	EndGlobalSection
+EndGlobal
