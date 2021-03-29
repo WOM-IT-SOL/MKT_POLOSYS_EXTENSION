@@ -2,7 +2,7 @@
   "profiles": {
     "POLO_DUKCAPIL_FAIL_SAFE": {
       "commandName": "Project",
-      "commandLineArgs": "Local"
+      "commandLineArgs": "UAT"
     }
   }
 }

@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+  <connectionStrings>
+    <add name="Local"
+         connectionString="Server=xxx.xxx.xxx.xxx;Database=xxxxxx;user id=xxxxxx;password=xxxxxx;"
+         providerName="System.Data.SqlClient"/>
+    <add name="UAT"
+         connectionString="Server=xxx.xxx.xxx.xxx;Database=xxxxxx;user id=xxxxxx;password=xxxxxx;"
+         providerName="System.Data.SqlClient"/>
+    <add name="Production"
+         connectionString="Server=xxx.xxx.xxx.xxx;Database=xxxxxx;user id=xxxxxx;password=xxxxxx;"
+         providerName="System.Data.SqlClient"/>
+  </connectionStrings>
+</configuration>
