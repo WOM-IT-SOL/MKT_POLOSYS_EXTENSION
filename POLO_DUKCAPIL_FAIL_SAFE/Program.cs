@@ -29,6 +29,7 @@ namespace POLO_DUKCAPIL_FAIL_SAFE
         {
             this.command.CommandText = @"INSERT INTO CONFINS.DBO.LOG_JOB_PROC_WOM(JOB_NAME, PROC_NAME, DATE_PROCESSED, ERR_MESSAGE, ERR_LINE, ERR_NUMBER) 
                 VALUES('JOB_POLOSYS_DUKCAPIL_FAILSAFE', '" + state + " JOB_POLOSYS_DUKCAPIL_FAILSAFE', GETDATE(), " + errMsg + ", NULL, NULL)";
+            this.command.CommandType = CommandType.Text;
             this.command.Connection.Open();
             this.command.ExecuteReader();
             this.command.Connection.Close();
