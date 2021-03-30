@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SEND_DATA_FAIL_SAFE": {
+      "commandName": "Project",
+      "commandLineArgs": "Local"
+    }
+  }
+}
