@@ -38,7 +38,7 @@ namespace SEND_DATA_FAIL_SAFE
             List<string> taskIds = new List<string>();
             this.command.CommandText = @"SELECT TASK_ID FROM T_MKT_POLO_ORDER_IN WHERE SEND_FLAG_WISE='0' OR SEND_FLAG_MSS='0'";
             this.command.CommandType = CommandType.Text;
-            
+
             this.command.Connection.Open();
             SqlDataReader dr = this.command.ExecuteReader();
 
@@ -48,6 +48,7 @@ namespace SEND_DATA_FAIL_SAFE
             }
 
             this.command.Connection.Close();
+            dr.Close();
 
             foreach (string taskId in taskIds)
             {
@@ -225,16 +226,20 @@ namespace SEND_DATA_FAIL_SAFE
             this.command.Connection.Close();
             #endregion
 
-            #region consume send data API
+            string tempStartDt = "";
+            if (apiName == "DataPreparation_To_Wise")
+            {
+                tempStartDt = record["startDt"];
+                record["startDt"] = DateTime.Parse(record["startDt"]).ToString("dd/MM/yyyy");
+            }
             string bodyJson = JsonConvert.SerializeObject(record, Formatting.None);
-
             var requestLogResult = this.logRequest(taskId, apiName, bodyJson);
 
-            HttpClient client = new HttpClient();
-            var content = new StringContent(bodyJson, Encoding.UTF8, "application/json");
-
+            #region consume send data API
             try
             {
+                HttpClient client = new HttpClient();
+                var content = new StringContent(bodyJson, Encoding.UTF8, "application/json");
                 var response = await client.PostAsync(new Uri(sendDataApiUrl), content);
 
                 if (response.IsSuccessStatusCode)
@@ -245,7 +250,7 @@ namespace SEND_DATA_FAIL_SAFE
                     if (apiName == "DataPreparation_To_Wise")
                     {
                         this.logResponse(taskId, apiName, requestLogResult["responseId"], resObj["status"]["message"].ToString(), resObj["status"]["code"].ToString(), null);
-                        this.postConsumeWiseAPI(taskId, record["startDt"], resObj["status"]["code"].ToString(), resObj["appNo"].ToString());
+                        this.postConsumeWiseAPI(taskId, tempStartDt, resObj["status"]["code"].ToString(), resObj["appNo"].ToString());
                     }
                     else if (apiName == "DataTask_To_MSS")
                     {
