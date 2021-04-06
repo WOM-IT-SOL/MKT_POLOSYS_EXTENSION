@@ -84,7 +84,7 @@ namespace POLO_DUKCAPIL_FAIL_SAFE
 
             foreach (var id in queueUids)
             {
-                var body = JsonConvert.SerializeObject(new { dataSource = "UPLOAD", queueUID = id }, Formatting.None);
+                var body = JsonConvert.SerializeObject(new { dataSource = "UPLOAD", queueUID = id, isJob = "" }, Formatting.None);
                 var content = new StringContent(body, Encoding.UTF8, "application/json");
 
                 var response = await client.PostAsync(new Uri(url), content);
