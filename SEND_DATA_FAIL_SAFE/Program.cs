@@ -121,11 +121,11 @@ namespace SEND_DATA_FAIL_SAFE
 
             if (sendTo == "WISE")
             {
-                await this.consumeSendDataAPI(taskId, "DataPreparation_To_Wise", "URL_API_SEND_DATA_WISE", record);
+                await this.consumeSendDataAPI(taskId, "Job_DataPreparation_To_Wise", "URL_API_SEND_DATA_WISE", record);
             }
             else if (sendTo == "MSS")
             {
-                await this.consumeSendDataAPI(taskId, "DataTask_To_MSS", "URL_API_SEND_DATA_MSS", record);
+                await this.consumeSendDataAPI(taskId, "Job_DataTask_To_MSS", "URL_API_SEND_DATA_MSS", record);
             }
 
         }
@@ -227,7 +227,7 @@ namespace SEND_DATA_FAIL_SAFE
             #endregion
 
             string tempStartDt = "";
-            if (apiName == "DataPreparation_To_Wise")
+            if (apiName == "Job_DataPreparation_To_Wise")
             {
                 tempStartDt = record["startDt"];
                 record["startDt"] = DateTime.Parse(record["startDt"]).ToString("dd/MM/yyyy");
@@ -248,12 +248,12 @@ namespace SEND_DATA_FAIL_SAFE
                     string resJson = await response.Content.ReadAsStringAsync();
                     JObject resObj = JObject.Parse(resJson);
 
-                    if (apiName == "DataPreparation_To_Wise")
+                    if (apiName == "Job_DataPreparation_To_Wise")
                     {
                         this.logResponse(taskId, apiName, requestLogResult["responseId"], resObj["status"]["message"].ToString(), resObj["status"]["code"].ToString(), null);
                         this.postConsumeWiseAPI(taskId, tempStartDt, resObj["status"]["code"].ToString(), resObj["appNo"].ToString());
                     }
-                    else if (apiName == "DataTask_To_MSS")
+                    else if (apiName == "Job_DataTask_To_MSS")
                     {
                         this.logResponse(taskId, apiName, requestLogResult["responseId"], resObj["message"].ToString(), resObj["code"].ToString(), null);
                         this.postConsumeMSSAPI(taskId, resObj["code"].ToString(), resObj["taskIdMss"].ToString());
@@ -266,12 +266,12 @@ namespace SEND_DATA_FAIL_SAFE
             }
             catch (Exception e)
             {
-                if (apiName == "DataPreparation_To_Wise")
+                if (apiName == "Job_DataPreparation_To_Wise")
                 {
                     this.logResponse(taskId, apiName, requestLogResult["responseId"], null, null, e.Message);
                     this.postConsumeWiseAPI(taskId, null, null, null);
                 }
-                else if (apiName == "DataTask_To_MSS")
+                else if (apiName == "Job_DataTask_To_MSS")
                 {
                     this.logResponse(taskId, apiName, requestLogResult["responseId"], null, null, e.Message);
                     this.postConsumeMSSAPI(taskId, null, null);
