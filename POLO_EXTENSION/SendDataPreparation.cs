@@ -194,16 +194,21 @@ namespace POLO_EXTENSION
             this.command.Connection.Close();
             #endregion
 
-            #region consume send data API
+            string tempStartDt = "";
+            if (apiName == "DataPreparation_To_Wise")
+            {
+                tempStartDt = record["startDt"];
+                record["startDt"] = DateTime.Parse(record["startDt"]).ToString("dd/MM/yyyy");
+            }
             string bodyJson = JsonConvert.SerializeObject(record, Formatting.None);
-
             var requestLogResult = this.logRequest(taskId, apiName, bodyJson);
 
-            HttpClient client = new HttpClient();
-            var content = new StringContent(bodyJson, Encoding.UTF8, "application/json");
-
+            #region consume send data API
             try
             {
+                HttpClient client = new HttpClient();
+                client.Timeout = TimeSpan.FromMinutes(3);
+                var content = new StringContent(bodyJson, Encoding.UTF8, "application/json");
                 var response = await client.PostAsync(new Uri(sendDataApiUrl), content);
 
                 if (response.IsSuccessStatusCode)
@@ -214,7 +219,7 @@ namespace POLO_EXTENSION
                     if (apiName == "DataPreparation_To_Wise")
                     {
                         this.logResponse(taskId, apiName, requestLogResult["responseId"], resObj["status"]["message"].ToString(), resObj["status"]["code"].ToString(), null);
-                        this.postConsumeWiseAPI(taskId, record["startDt"], resObj["status"]["code"].ToString(), resObj["appNo"].ToString());
+                        this.postConsumeWiseAPI(taskId, tempStartDt, resObj["status"]["code"].ToString(), resObj["appNo"].ToString());
                     }
                     else if (apiName == "DataTask_To_MSS")
                     {
@@ -233,7 +238,7 @@ namespace POLO_EXTENSION
                 {
                     this.logResponse(taskId, apiName, requestLogResult["responseId"], null, null, e.Message);
                     this.postConsumeWiseAPI(taskId, null, null, null);
-                } 
+                }
                 else if (apiName == "DataTask_To_MSS")
                 {
                     this.logResponse(taskId, apiName, requestLogResult["responseId"], null, null, e.Message);
