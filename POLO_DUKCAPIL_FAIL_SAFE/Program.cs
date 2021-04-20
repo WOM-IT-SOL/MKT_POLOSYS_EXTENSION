@@ -47,7 +47,7 @@ namespace POLO_DUKCAPIL_FAIL_SAFE
                 
                 SELECT DISTINCT QUEUE_UID
                 FROM T_MKT_POLO_DUKCAPIL_CHECK_QUEUE
-                WHERE RESPONSE_CODE NOT IN (SELECT* FROM fnMKT_POLO_SPLIT_STRING(@successCode, ','))
+                WHERE RESPONSE_CODE NOT IN (SELECT * FROM fnMKT_POLO_SPLIT_STRING(@successCode, ','))
                     AND FLAG_PROCESS = 'F'
                     AND CAST(DTM_CRT AS DATE)= '" + today.ToString("yyyy-MM-dd") + "'";
 
