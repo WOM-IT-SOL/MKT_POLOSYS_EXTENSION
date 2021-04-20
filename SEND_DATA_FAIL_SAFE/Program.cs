@@ -239,6 +239,7 @@ namespace SEND_DATA_FAIL_SAFE
             try
             {
                 HttpClient client = new HttpClient();
+                client.Timeout = TimeSpan.FromMinutes(3);
                 var content = new StringContent(bodyJson, Encoding.UTF8, "application/json");
                 var response = await client.PostAsync(new Uri(sendDataApiUrl), content);
 
