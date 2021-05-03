@@ -1,9 +1,12 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.IO;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,6 +29,7 @@ namespace POLO_DUKCAPIL_FAIL_SAFE
         {
             this.command.CommandText = @"INSERT INTO CONFINS.DBO.LOG_JOB_PROC_WOM(JOB_NAME, PROC_NAME, DATE_PROCESSED, ERR_MESSAGE, ERR_LINE, ERR_NUMBER) 
                 VALUES('JOB_POLOSYS_DUKCAPIL_FAILSAFE', '" + state + " JOB_POLOSYS_DUKCAPIL_FAILSAFE', GETDATE(), " + errMsg + ", NULL, NULL)";
+            this.command.CommandType = CommandType.Text;
             this.command.Connection.Open();
             this.command.ExecuteReader();
             this.command.Connection.Close();
@@ -38,12 +42,12 @@ namespace POLO_DUKCAPIL_FAIL_SAFE
 
             this.command.CommandText = @"DECLARE @successCode VARCHAR(max)
                 SELECT @successCode = PARAMETER_VALUE
-                FROM CONFINS..MST_FILE_PARAMETER
-                WHERE PARAMETER_NAME = 'RESPONSE_CODE_API_DUKCAPIL_SUCCESS'
+                FROM M_MKT_POLO_PARAMETER
+                WHERE PARAMETER_TYPE = 'RESPONSE_CODE_API_DUKCAPIL_SUCCESS'
                 
                 SELECT DISTINCT QUEUE_UID
                 FROM T_MKT_POLO_DUKCAPIL_CHECK_QUEUE
-                WHERE RESPONSE_CODE NOT IN(SELECT* FROM fnMKT_POLO_SPLIT_STRING(@successCode, ','))
+                WHERE RESPONSE_CODE NOT IN (SELECT * FROM fnMKT_POLO_SPLIT_STRING(@successCode, ','))
                     AND FLAG_PROCESS = 'F'
                     AND CAST(DTM_CRT AS DATE)= '" + today.ToString("yyyy-MM-dd") + "'";
 
@@ -80,7 +84,7 @@ namespace POLO_DUKCAPIL_FAIL_SAFE
 
             foreach (var id in queueUids)
             {
-                var body = JsonConvert.SerializeObject(new { dataSource = "UPLOAD", queueUID = id }, Formatting.None);
+                var body = JsonConvert.SerializeObject(new { dataSource = "UPLOAD", queueUID = id, isJob = "" }, Formatting.None);
                 var content = new StringContent(body, Encoding.UTF8, "application/json");
 
                 var response = await client.PostAsync(new Uri(url), content);

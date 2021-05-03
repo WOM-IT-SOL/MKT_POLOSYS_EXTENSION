@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "POLO_DUKCAPIL_FAIL_SAFE": {
+    "SEND_DATA_FAIL_SAFE": {
       "commandName": "Project",
       "commandLineArgs": "UAT"
     }

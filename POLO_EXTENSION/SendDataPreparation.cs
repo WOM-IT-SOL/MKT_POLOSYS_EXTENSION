@@ -1,62 +1,30 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Data.SqlClient;
-using System.Net.Http;
-using System.Text;
+﻿using System;
 using System.Threading.Tasks;
+using System.Data.SqlClient;
+using System.Data;
+using System.Linq;
+using System.Collections.Generic;
+using System.Net.Http;
+using Newtonsoft.Json;
+using System.Text;
+using Newtonsoft.Json.Linq;
+using System.Runtime.InteropServices;
 
-namespace SEND_DATA_FAIL_SAFE
+namespace POLO_EXTENSION
 {
-    class Program
+    public class SendDataPreparation
     {
         private SqlConnection connection;
         private SqlCommand command;
 
-        public Program(string connString)
+        public SendDataPreparation(string connectionString)
         {
-            this.connection = new SqlConnection(connString);
+            this.connection = new SqlConnection(connectionString);
             this.command = new SqlCommand();
             this.command.Connection = this.connection;
         }
 
-        private void logJob(string state, string errMsg = "NULL")
-        {
-            this.command.CommandText = @"INSERT INTO CONFINS.DBO.LOG_JOB_PROC_WOM(JOB_NAME, PROC_NAME, DATE_PROCESSED, ERR_MESSAGE, ERR_LINE, ERR_NUMBER) 
-                VALUES('JOB_POLOSYS_SENDDATA_FAILSAFE', '" + state + " JOB_POLOSYS_SENDDATA_FAILSAFE', GETDATE(), " + errMsg + ", NULL, NULL)";
-            this.command.CommandType = CommandType.Text;
-            this.command.Connection.Open();
-            this.command.ExecuteReader();
-            this.command.Connection.Close();
-        }
-
-        public async Task startProcess()
-        {
-            List<string> taskIds = new List<string>();
-            this.command.CommandText = @"SELECT TASK_ID FROM T_MKT_POLO_ORDER_IN WHERE SEND_FLAG_WISE='0' OR SEND_FLAG_MSS='0'";
-            this.command.CommandType = CommandType.Text;
-
-            this.command.Connection.Open();
-            SqlDataReader dr = this.command.ExecuteReader();
-
-            while (dr.Read())
-            {
-                taskIds.Add(dr.GetString(0));
-            }
-
-            this.command.Connection.Close();
-            dr.Close();
-
-            foreach (string taskId in taskIds)
-            {
-                await this.validateTask(taskId);
-            }
-        }
-
-        public async Task validateTask(string taskId)
+        public async Task startProcess(string taskId)
         {
             Dictionary<string, string> result = new Dictionary<string, string>();
             string sendDataFlag;
@@ -109,8 +77,8 @@ namespace SEND_DATA_FAIL_SAFE
             this.command.Connection.Open();
 
             SqlDataReader rd = this.command.ExecuteReader();
-
             rd.Read();
+
             for (int i = 0; i < rd.FieldCount; i++)
             {
                 record.Add(rd.GetName(i), rd.GetValue(i).ToString());
@@ -121,11 +89,11 @@ namespace SEND_DATA_FAIL_SAFE
 
             if (sendTo == "WISE")
             {
-                await this.consumeSendDataAPI(taskId, "Job_DataPreparation_To_Wise", "URL_API_SEND_DATA_WISE", record);
+                await this.consumeSendDataAPI(taskId, "DataPreparation_To_Wise", "URL_API_SEND_DATA_WISE", record);
             }
             else if (sendTo == "MSS")
             {
-                await this.consumeSendDataAPI(taskId, "Job_DataTask_To_MSS", "URL_API_SEND_DATA_MSS", record);
+                await this.consumeSendDataAPI(taskId, "DataTask_To_MSS", "URL_API_SEND_DATA_MSS", record);
             }
 
         }
@@ -227,7 +195,7 @@ namespace SEND_DATA_FAIL_SAFE
             #endregion
 
             string tempStartDt = "";
-            if (apiName == "Job_DataPreparation_To_Wise")
+            if (apiName == "DataPreparation_To_Wise")
             {
                 tempStartDt = record["startDt"];
                 record["startDt"] = DateTime.Parse(record["startDt"]).ToString("dd/MM/yyyy");
@@ -248,12 +216,12 @@ namespace SEND_DATA_FAIL_SAFE
                     string resJson = await response.Content.ReadAsStringAsync();
                     JObject resObj = JObject.Parse(resJson);
 
-                    if (apiName == "Job_DataPreparation_To_Wise")
+                    if (apiName == "DataPreparation_To_Wise")
                     {
                         this.logResponse(taskId, apiName, requestLogResult["responseId"], resObj["status"]["message"].ToString(), resObj["status"]["code"].ToString(), null);
                         this.postConsumeWiseAPI(taskId, tempStartDt, resObj["status"]["code"].ToString(), resObj["appNo"].ToString());
                     }
-                    else if (apiName == "Job_DataTask_To_MSS")
+                    else if (apiName == "DataTask_To_MSS")
                     {
                         this.logResponse(taskId, apiName, requestLogResult["responseId"], resObj["message"].ToString(), resObj["code"].ToString(), null);
                         this.postConsumeMSSAPI(taskId, resObj["code"].ToString(), resObj["taskIdMss"].ToString());
@@ -266,12 +234,12 @@ namespace SEND_DATA_FAIL_SAFE
             }
             catch (Exception e)
             {
-                if (apiName == "Job_DataPreparation_To_Wise")
+                if (apiName == "DataPreparation_To_Wise")
                 {
                     this.logResponse(taskId, apiName, requestLogResult["responseId"], null, null, e.Message);
                     this.postConsumeWiseAPI(taskId, null, null, null);
                 }
-                else if (apiName == "Job_DataTask_To_MSS")
+                else if (apiName == "DataTask_To_MSS")
                 {
                     this.logResponse(taskId, apiName, requestLogResult["responseId"], null, null, e.Message);
                     this.postConsumeMSSAPI(taskId, null, null);
@@ -279,29 +247,6 @@ namespace SEND_DATA_FAIL_SAFE
             }
             #endregion
         }
-
-        static async Task Main(string[] args)
-        {
-            Program program = new Program(ConfigurationManager.ConnectionStrings[args[0]].ToString());
-
-            string errMsg = "";
-            try
-            {
-                program.logJob("START");
-                await program.startProcess();
-                Console.WriteLine("Done");
-            }
-            catch (Exception e)
-            {
-                errMsg = e.Message;
-                Console.WriteLine("Error");
-                Console.WriteLine(errMsg);
-            }
-            finally
-            {
-                if (errMsg != "") program.logJob("END", "'" + errMsg + "'");
-                else program.logJob("END");
-            }
-        }
     }
 }
+
