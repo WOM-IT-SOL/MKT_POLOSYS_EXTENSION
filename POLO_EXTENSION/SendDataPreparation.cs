@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using System.Data.SqlClient;
 using System.Data;
@@ -14,11 +14,13 @@ namespace POLO_EXTENSION
 {
     public class SendDataPreparation
     {
+        private Boolean isJob;
         private SqlConnection connection;
         private SqlCommand command;
 
-        public SendDataPreparation(string connectionString)
+        public SendDataPreparation(string connectionString, bool isJob = false)
         {
+            this.isJob = isJob;
             this.connection = new SqlConnection(connectionString);
             this.command = new SqlCommand();
             this.command.Connection = this.connection;
@@ -101,6 +103,8 @@ namespace POLO_EXTENSION
         #region log request and response
         private Dictionary<string, string> logRequest(string taskId, string apiName, string bodyJson)
         {
+            if (isJob) apiName = "Job_" + apiName;
+
             Dictionary<string, string> result = new Dictionary<string, string>();
             this.command.CommandText = "spMKT_POLO_API_LOGREQUEST";
             this.command.CommandType = CommandType.StoredProcedure;
@@ -127,6 +131,8 @@ namespace POLO_EXTENSION
 
         private void logResponse(string taskId, string apiName, string responseId, string responseMsg, string responseCode, string errorDesc)
         {
+            if (isJob) apiName = "Job_" + apiName;
+            
             this.command.CommandText = "spMKT_POLO_API_LOGRESPONSE";
             this.command.CommandType = CommandType.StoredProcedure;
             this.command.Parameters.Clear();
@@ -161,14 +167,14 @@ namespace POLO_EXTENSION
             this.command.Connection.Close();
         }
 
-        private void postConsumeMSSAPI(string taskId, string respCode, string taskIdMss)
+        private void postConsumeMSSAPI(string taskId, string respCode, string orderNo)
         {
             this.command.CommandText = "spMKT_POLO_SENDDATA_UPDATEDATATASK";
             this.command.CommandType = CommandType.StoredProcedure;
             this.command.Parameters.Clear();
             this.command.Parameters.AddWithValue("taskId", taskId);
             this.command.Parameters.AddWithValue("respCode", (object)respCode ?? DBNull.Value);
-            this.command.Parameters.AddWithValue("taskIdMss", (object)taskIdMss ?? DBNull.Value);
+            this.command.Parameters.AddWithValue("orderNo", (object)orderNo ?? DBNull.Value);
 
             this.command.Connection.Open();
 
@@ -224,7 +230,7 @@ namespace POLO_EXTENSION
                     else if (apiName == "DataTask_To_MSS")
                     {
                         this.logResponse(taskId, apiName, requestLogResult["responseId"], resObj["message"].ToString(), resObj["code"].ToString(), null);
-                        this.postConsumeMSSAPI(taskId, resObj["code"].ToString(), resObj["taskIdMss"].ToString());
+                        this.postConsumeMSSAPI(taskId, resObj["code"].ToString(), resObj["orderNo"].ToString());
                     }
                 }
                 else
