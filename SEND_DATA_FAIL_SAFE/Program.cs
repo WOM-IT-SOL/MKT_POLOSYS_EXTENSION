@@ -87,7 +87,7 @@ namespace SEND_DATA_FAIL_SAFE
                     string errMessage;
                     if (e.Message.Contains("converting") )
                     {
-                        errMessage = "Error Converting Type";
+                        errMessage = e.Message;
                     }
                     else
                     {
