@@ -28,18 +28,33 @@ namespace SEND_DATA_FAIL_SAFE
 
         private void logJob(string state, string errMsg = "NULL")
         {
-            this.command.CommandText = @"INSERT INTO CONFINS.DBO.LOG_JOB_PROC_WOM(JOB_NAME, PROC_NAME, DATE_PROCESSED, ERR_MESSAGE, ERR_LINE, ERR_NUMBER) 
-                VALUES('JOB_POLOSYS_SENDDATA_FAILSAFE', '" + state + " JOB_POLOSYS_SENDDATA_FAILSAFE', GETDATE(), " + errMsg + ", NULL, NULL)";
-            this.command.CommandType = CommandType.Text;
-            this.command.Connection.Open();
-            this.command.ExecuteReader();
-            this.command.Connection.Close();
+            try
+            {  
+                string jobName = "JOB_POLOSYS_SENDDATA_FAILSAFE";
+                this.command.CommandText = "spMKT_POLO_INS_LOG_JOB";
+                this.command.CommandType = CommandType.StoredProcedure;
+                this.command.Parameters.Clear();
+                this.command.Parameters.AddWithValue("state", state);
+                this.command.Parameters.AddWithValue("jobName", jobName);
+                this.command.Parameters.AddWithValue("errMsg", errMsg);
+
+                this.command.Connection.Open();
+                this.command.ExecuteReader();
+                this.command.Connection.Close();
+                 
+            }
+            catch (Exception e)
+            {
+                this.command.Connection.Close();
+                //throw;
+            }
+            
         }
 
         public async Task startProcess()
         {
             List<string> taskIds = new List<string>();
-            this.command.CommandText = @"SELECT TASK_ID FROM T_MKT_POLO_ORDER_IN WHERE SEND_FLAG_WISE='0' OR SEND_FLAG_MSS='0'";
+            this.command.CommandText = @"SELECT TASK_ID FROM T_MKT_POLO_ORDER_IN WHERE SEND_FLAG_WISE='0' OR SEND_FLAG_MSS='0' ORDER BY TASK_ID ASC";
             this.command.CommandType = CommandType.Text;
 
             this.command.Connection.Open();
@@ -58,33 +73,42 @@ namespace SEND_DATA_FAIL_SAFE
             await send.startProcess(taskId);
             */
 
-            /*add */
+            /*add improvement START*/
             List<string> errors = new List<string>();
+            SendDataPreparation send = new SendDataPreparation(this.connString, true);
             foreach (string taskId in taskIds)
             {
                 try
-                {
-                    SendDataPreparation send = new SendDataPreparation(this.connString, true);
+                {                    
                     await send.startProcess(taskId);
                 }
                 catch (Exception e)
                 {
-                    errors.Add(taskId+" : "+e.Message+";");
+                    string errMessage;
+                    if (e.Message.Contains("converting") )
+                    {
+                        errMessage = "Error Converting Type";
+                    }
+                    else
+                    {
+                        errMessage = e.Message;
+                    }
+                    errors.Add(taskId+" : "+ errMessage + ";");
                     continue;
                 }
-
-                if (errors.Count>0)
+                 
+            }
+            if (errors.Count > 0)
+            {
+                string errMsg = "";
+                foreach (string err in errors)
                 {
-                    string errMsg = "";
-                    foreach (string err in errors)
-                    {
-                        errMsg += err;
-                    }
-                    throw new Exception(errMsg);
+                    errMsg += err;
                 }
+                throw new Exception(errMsg);
             }
         }
-
+        /*add improvement END*/
         static async Task Main(string[] args)
         {
             Program program = new Program(ConfigurationManager.ConnectionStrings[args[0]].ToString());
