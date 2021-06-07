@@ -38,6 +38,7 @@ namespace POLO_EXTENSION
             this.command.Parameters.Clear();
             this.command.Parameters.AddWithValue("@taskId", taskId);
             this.command.Connection.Open();
+            /*PR-009-01-21 - Project Pooling Order System (POLO System) - Improvement 20210607 BY JUAN ADDED try catch*/
             try
             {
                 SqlDataReader rd = this.command.ExecuteReader();

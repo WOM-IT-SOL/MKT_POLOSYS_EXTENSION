@@ -28,6 +28,7 @@ namespace SEND_DATA_FAIL_SAFE
 
         private void logJob(string state, string errMsg = "NULL")
         {
+            /*PR-009-01-21 - Project Pooling Order System (POLO System) - Improvement 20210607 BY JUAN ADDED TRYCATCH and Change insert log with SP*/
             try
             {  
                 string jobName = "JOB_POLOSYS_SENDDATA_FAILSAFE";
@@ -68,12 +69,11 @@ namespace SEND_DATA_FAIL_SAFE
             this.command.Connection.Close();
             dr.Close();
 
-            /* remark
+            /* PR-009-01-21 - Project Pooling Order System (POLO System) - Improvement 20210607 BY JUAN ADDED REMARK
             SendDataPreparation send = new SendDataPreparation(this.connString, true);
             await send.startProcess(taskId);
             */
-
-            /*add improvement START*/
+            /*PR-009-01-21 - Project Pooling Order System (POLO System) - Improvement 20210607 BY JUAN ADDED START*/
             List<string> errors = new List<string>();
             SendDataPreparation send = new SendDataPreparation(this.connString, true);
             foreach (string taskId in taskIds)
@@ -108,7 +108,7 @@ namespace SEND_DATA_FAIL_SAFE
                 throw new Exception(errMsg);
             }
         }
-        /*add improvement END*/
+        /*PR-009-01-21 - Project Pooling Order System (POLO System) - Improvement 20210607 BY JUAN ADDED END*/ 
         static async Task Main(string[] args)
         {
             Program program = new Program(ConfigurationManager.ConnectionStrings[args[0]].ToString());
