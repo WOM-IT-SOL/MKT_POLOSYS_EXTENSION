@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using System.Data.SqlClient;
 using System.Data;
@@ -14,11 +14,13 @@ namespace POLO_EXTENSION
 {
     public class SendDataPreparation
     {
+        private Boolean isJob;
         private SqlConnection connection;
         private SqlCommand command;
 
-        public SendDataPreparation(string connectionString)
+        public SendDataPreparation(string connectionString, bool isJob = false)
         {
+            this.isJob = isJob;
             this.connection = new SqlConnection(connectionString);
             this.command = new SqlCommand();
             this.command.Connection = this.connection;
@@ -36,23 +38,35 @@ namespace POLO_EXTENSION
             this.command.Parameters.Clear();
             this.command.Parameters.AddWithValue("@taskId", taskId);
             this.command.Connection.Open();
-
-            SqlDataReader rd = this.command.ExecuteReader();
-
-            rd.Read();
-            sendDataFlag = rd.GetValue(rd.GetOrdinal("SENDDATA_FLAG")).ToString();
-            sendDataTo = rd.GetValue(rd.GetOrdinal("SENDDATA_TO")).ToString();
-
-            // the line below will only be used in case of more than 1 data needed to be send to MSS/WISE
-            sendDataName = rd.GetValue(rd.GetOrdinal("SENDDATA_NAME")).ToString();
-
-            rd.Close();
-            this.command.Connection.Close();
-
-            if (sendDataFlag == "T" && (sendDataTo == "WISE" || sendDataTo == "MSS"))
+            /*PR-009-01-21 - Project Pooling Order System (POLO System) - Improvement 20210607 BY JUAN ADDED try catch*/
+            try
             {
-                await this.fetchData(taskId, sendDataTo);
+                SqlDataReader rd = this.command.ExecuteReader();
+
+                rd.Read();
+                sendDataFlag = rd.GetValue(rd.GetOrdinal("SENDDATA_FLAG")).ToString();
+                sendDataTo = rd.GetValue(rd.GetOrdinal("SENDDATA_TO")).ToString();
+
+                // the line below will only be used in case of more than 1 data needed to be send to MSS/WISE
+                sendDataName = rd.GetValue(rd.GetOrdinal("SENDDATA_NAME")).ToString();
+
+                rd.Close();
+                this.command.Connection.Close();
+                if (sendDataFlag == "T" && (sendDataTo == "WISE" || sendDataTo == "MSS"))
+                {
+                    await this.fetchData(taskId, sendDataTo);
+                }
             }
+            catch (Exception e)
+            {
+                string errMsg = "";
+                errMsg = e.Message;
+                this.command.Connection.Close();
+                throw new Exception(errMsg);
+            }
+            
+
+            
         }
 
         private async Task fetchData(string taskId, string sendTo)
@@ -101,6 +115,8 @@ namespace POLO_EXTENSION
         #region log request and response
         private Dictionary<string, string> logRequest(string taskId, string apiName, string bodyJson)
         {
+            if (isJob) apiName = "Job_" + apiName;
+
             Dictionary<string, string> result = new Dictionary<string, string>();
             this.command.CommandText = "spMKT_POLO_API_LOGREQUEST";
             this.command.CommandType = CommandType.StoredProcedure;
@@ -127,6 +143,8 @@ namespace POLO_EXTENSION
 
         private void logResponse(string taskId, string apiName, string responseId, string responseMsg, string responseCode, string errorDesc)
         {
+            if (isJob) apiName = "Job_" + apiName;
+            
             this.command.CommandText = "spMKT_POLO_API_LOGRESPONSE";
             this.command.CommandType = CommandType.StoredProcedure;
             this.command.Parameters.Clear();
@@ -161,14 +179,14 @@ namespace POLO_EXTENSION
             this.command.Connection.Close();
         }
 
-        private void postConsumeMSSAPI(string taskId, string respCode, string taskIdMss)
+        private void postConsumeMSSAPI(string taskId, string respCode, string orderNo)
         {
             this.command.CommandText = "spMKT_POLO_SENDDATA_UPDATEDATATASK";
             this.command.CommandType = CommandType.StoredProcedure;
             this.command.Parameters.Clear();
             this.command.Parameters.AddWithValue("taskId", taskId);
             this.command.Parameters.AddWithValue("respCode", (object)respCode ?? DBNull.Value);
-            this.command.Parameters.AddWithValue("taskIdMss", (object)taskIdMss ?? DBNull.Value);
+            this.command.Parameters.AddWithValue("orderNo", (object)orderNo ?? DBNull.Value);
 
             this.command.Connection.Open();
 
@@ -217,14 +235,14 @@ namespace POLO_EXTENSION
                     JObject resObj = JObject.Parse(resJson);
 
                     if (apiName == "DataPreparation_To_Wise")
-                    {
-                        this.logResponse(taskId, apiName, requestLogResult["responseId"], resObj["status"]["message"].ToString(), resObj["status"]["code"].ToString(), null);
+                    {                        
                         this.postConsumeWiseAPI(taskId, tempStartDt, resObj["status"]["code"].ToString(), resObj["appNo"].ToString());
+                        this.logResponse(taskId, apiName, requestLogResult["responseId"], resObj["status"]["message"].ToString(), resObj["status"]["code"].ToString(), null);
                     }
                     else if (apiName == "DataTask_To_MSS")
                     {
+                        this.postConsumeMSSAPI(taskId, resObj["code"].ToString(), resObj["orderNo"].ToString());
                         this.logResponse(taskId, apiName, requestLogResult["responseId"], resObj["message"].ToString(), resObj["code"].ToString(), null);
-                        this.postConsumeMSSAPI(taskId, resObj["code"].ToString(), resObj["taskIdMss"].ToString());
                     }
                 }
                 else
@@ -236,13 +254,13 @@ namespace POLO_EXTENSION
             {
                 if (apiName == "DataPreparation_To_Wise")
                 {
-                    this.logResponse(taskId, apiName, requestLogResult["responseId"], null, null, e.Message);
                     this.postConsumeWiseAPI(taskId, null, null, null);
+                    this.logResponse(taskId, apiName, requestLogResult["responseId"], null, null, e.Message);
                 }
                 else if (apiName == "DataTask_To_MSS")
                 {
-                    this.logResponse(taskId, apiName, requestLogResult["responseId"], null, null, e.Message);
                     this.postConsumeMSSAPI(taskId, null, null);
+                    this.logResponse(taskId, apiName, requestLogResult["responseId"], null, null, e.Message);
                 }
             }
             #endregion
